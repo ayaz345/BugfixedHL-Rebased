@@ -55,7 +55,7 @@ def create_metadata(version, startpath):
 
             meta['files'][path] = file_data
 
-    with open(startpath + '/bugfixedhl_install_metadata.dat', "a") as f:
+    with open(f'{startpath}/bugfixedhl_install_metadata.dat', "a") as f:
         f.write(json.dumps(meta, sort_keys=True, indent=4))
 
 

@@ -11,7 +11,7 @@ import json
 
 IP = "127.0.0.1"
 PORT = 8000
-LOCAL_URL = 'http://' + IP + ':' + str(PORT) + '/'
+LOCAL_URL = f'http://{IP}:{PORT}/'
 
 VERSIONS = [
     # From newest to oldest
@@ -39,32 +39,27 @@ class HTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(http.HTTPStatus.NOT_FOUND, 'File not found')
 
     def handle_releases(self):
-        release_id = 1
         response = []
-        for version in VERSIONS:
+        for release_id, version in enumerate(VERSIONS, start=1):
             release = {
                 'id': release_id,
-                'tag_name': 'v' + version,
-                'name': 'v' + version + ': Test release',
-                'body': 'A description for ' + version + ' release.',
+                'tag_name': f'v{version}',
+                'name': f'v{version}: Test release',
+                'body': f'A description for {version} release.',
                 'draft': False,
                 'assets': [],
             }
 
-            asset_id = 1
-
-            for asset_name in ASSET_NAMES:
-                name = 'BugfixedHL-{}-{}.zip'.format(version, asset_name)
+            for asset_id, asset_name in enumerate(ASSET_NAMES, start=1):
+                name = f'BugfixedHL-{version}-{asset_name}.zip'
                 asset = {
                     'id': asset_id,
-                    'browser_download_url': LOCAL_URL + 'releases/' + name,
-                    'name': name
+                    'browser_download_url': f'{LOCAL_URL}releases/{name}',
+                    'name': name,
                 }
 
-                asset_id += 1
                 release['assets'].append(asset)
 
-            release_id += 1
             response.append(release)
 
         json_response = json.dumps(response)
