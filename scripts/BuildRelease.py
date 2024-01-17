@@ -39,12 +39,9 @@ class PlatformWindows:
         if self.script.vs_version == '2017':
             args.extend(['-G', 'Visual Studio 15 2017'])
         elif self.script.vs_version == '2019':
-            args.extend(['-G', 'Visual Studio 16 2019'])
-            args.extend(['-A', 'Win32'])
+            args.extend(['-G', 'Visual Studio 16 2019', '-A', 'Win32'])
         elif self.script.vs_version == '2022':
-            args.extend(['-G', 'Visual Studio 17 2022'])
-            args.extend(['-A', 'Win32'])
-
+            args.extend(['-G', 'Visual Studio 17 2022', '-A', 'Win32'])
         args.extend(['-T', self.script.vs_toolset])
 
         return args
@@ -56,7 +53,9 @@ class PlatformWindows:
         return False
 
     def update_bin_path(self):
-        self.script.paths.out_bin = self.script.paths.build + '/' + self.script.build_type + '/'
+        self.script.paths.out_bin = (
+            f'{self.script.paths.build}/{self.script.build_type}/'
+        )
 
     def get_dll_ext(self):
         return '.dll'
@@ -69,9 +68,7 @@ class PlatformLinux:
         self.script = scr
 
     def get_cmake_args(self):
-        args = []
-        args.extend(['-G', 'Ninja'])
-
+        args = ['-G', 'Ninja']
         toolchain_file = ''
 
         if self.script.linux_compiler == 'gcc':
@@ -82,7 +79,11 @@ class PlatformLinux:
             toolchain_file = 'ToolchainLinuxGCC9.cmake'
 
         if toolchain_file:
-            args.extend(['-DCMAKE_TOOLCHAIN_FILE={}cmake/{}'.format(self.script.repo_root, toolchain_file)])
+            args.extend(
+                [
+                    f'-DCMAKE_TOOLCHAIN_FILE={self.script.repo_root}cmake/{toolchain_file}'
+                ]
+            )
         return args
     
     def get_cmake_build_args(self):
@@ -92,7 +93,7 @@ class PlatformLinux:
         return True
 
     def update_bin_path(self):
-        self.script.paths.out_bin = self.script.paths.build + '/'
+        self.script.paths.out_bin = f'{self.script.paths.build}/'
 
     def get_dll_ext(self):
         return '.so'
@@ -126,8 +127,12 @@ class TargetClient:
 
     def get_file_list(self):
         files = COMMON_FILES_TO_COPY
-        files.append(FileToCopy(self.script.paths.out_bin + 'client' + self.script.platform.get_dll_ext(),
-                                'valve_addon/cl_dlls/client' + self.script.platform.get_dll_ext()))
+        files.append(
+            FileToCopy(
+                f'{self.script.paths.out_bin}client{self.script.platform.get_dll_ext()}',
+                f'valve_addon/cl_dlls/client{self.script.platform.get_dll_ext()}',
+            )
+        )
         files.append(FileToCopy('gamedir/resource', 'valve_addon/resource'))
         files.append(FileToCopy('gamedir/sound', 'valve_addon/sound'))
         files.append(FileToCopy('gamedir/sprites', 'valve_addon/sprites'))
@@ -135,8 +140,12 @@ class TargetClient:
         files.append(FileToCopy('gamedir/commandmenu_default.txt', 'valve_addon/commandmenu_default.txt'))
 
         if get_platform_type() == 'windows':
-            files.append(FileToCopy(self.script.paths.out_bin + 'client.pdb',
-                                    'valve_addon/cl_dlls/client.pdb'))
+            files.append(
+                FileToCopy(
+                    f'{self.script.paths.out_bin}client.pdb',
+                    'valve_addon/cl_dlls/client.pdb',
+                )
+            )
 
         return files
 
@@ -152,19 +161,38 @@ class TargetServer:
 
     def get_file_list(self):
         files = COMMON_FILES_TO_COPY
-        files.append(FileToCopy(self.script.paths.out_bin + 'hl' + self.script.platform.get_dll_ext(),
-                                'valve_addon/dlls/hl' + self.script.platform.get_dll_ext()))
+        files.append(
+            FileToCopy(
+                f'{self.script.paths.out_bin}hl{self.script.platform.get_dll_ext()}',
+                f'valve_addon/dlls/hl{self.script.platform.get_dll_ext()}',
+            )
+        )
 
         if get_platform_type() == 'windows':
-            files.append(FileToCopy(self.script.paths.out_bin + 'hl.pdb',
-                                    'valve_addon/dlls/hl.pdb'))
-            files.append(FileToCopy(self.script.paths.out_bin + 'bugfixedapi_amxx.dll',
-                                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx.dll'))
-            files.append(FileToCopy(self.script.paths.out_bin + 'bugfixedapi_amxx.pdb',
-                                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx.pdb'))
+            files.append(
+                FileToCopy(
+                    f'{self.script.paths.out_bin}hl.pdb', 'valve_addon/dlls/hl.pdb'
+                )
+            )
+            files.append(
+                FileToCopy(
+                    f'{self.script.paths.out_bin}bugfixedapi_amxx.dll',
+                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx.dll',
+                )
+            )
+            files.append(
+                FileToCopy(
+                    f'{self.script.paths.out_bin}bugfixedapi_amxx.pdb',
+                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx.pdb',
+                )
+            )
         elif get_platform_type() == 'linux':
-            files.append(FileToCopy(self.script.paths.out_bin + 'bugfixedapi_amxx_i386.so',
-                                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx_i386.so'))
+            files.append(
+                FileToCopy(
+                    f'{self.script.paths.out_bin}bugfixedapi_amxx_i386.so',
+                    'valve_addon/addons/amxmodx/modules/bugfixedapi_amxx_i386.so',
+                )
+            )
 
         return files
 
@@ -218,13 +246,13 @@ class BuildScript:
 
         try:
             self.repo_root = \
-                subprocess.Popen(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE).communicate()[
+                    subprocess.Popen(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE).communicate()[
                     0].rstrip().decode('utf-8').replace('\\', '/') + '/'
             self.git_hash = \
-                subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], stdout=subprocess.PIPE).communicate()[
+                    subprocess.Popen(['git', 'rev-parse', '--short', 'HEAD'], stdout=subprocess.PIPE).communicate()[
                     0].rstrip().decode('utf-8')
         except Exception as e:
-            print('Failed to get info from Git repo: ' + str(e))
+            print(f'Failed to get info from Git repo: {str(e)}')
             exit(1)
 
         self.date_code = datetime.datetime.now().strftime('%Y%m%d')
@@ -301,45 +329,35 @@ class BuildScript:
         if v_tag is None or v_tag == 'no_tag':
             v_tag = ''
 
-        self.release_version = "{}.{}.{}".format(args.v_major, args.v_minor, args.v_patch)
+        self.release_version = f"{args.v_major}.{args.v_minor}.{args.v_patch}"
         if len(v_tag) != 0:
-            self.release_version = "{}-{}".format(self.release_version, v_tag)
+            self.release_version = f"{self.release_version}-{v_tag}"
         if args.v_meta:
-            self.release_version = "{}+{}".format(self.release_version, args.v_meta)
+            self.release_version = f"{self.release_version}+{args.v_meta}"
 
         self.release_version_array = [args.v_major, args.v_minor, args.v_patch, v_tag]
         print(f'Version: {self.release_version_array}')
 
         # Set output directory
-        self.out_dir_name = 'BugfixedHL-{}-{}-{}-{}-{}'.format(
-            self.release_version.replace('+', '-'),
-            self.build_target_name, 
-            get_platform_type(), 
-            self.git_hash, 
-            self.date_code
-        )
+        self.out_dir_name = f"BugfixedHL-{self.release_version.replace('+', '-')}-{self.build_target_name}-{get_platform_type()}-{self.git_hash}-{self.date_code}"
 
         # Set artifact name
         if args.ci:
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                f.write('artifact_name=BugfixedHL-{}-{}-{}-{}'.format(
-                    self.release_version.replace('+', '-'),
-                    self.build_target_name,
-                    get_platform_type(),
-                    self.git_hash
-                ))
+                f.write(
+                    f"artifact_name=BugfixedHL-{self.release_version.replace('+', '-')}-{self.build_target_name}-{get_platform_type()}-{self.git_hash}"
+                )
 
-        out_dir = args.out_dir
-        if out_dir:
+        if out_dir := args.out_dir:
             self.paths.base = out_dir
         else:
             work_dir = os.getcwd()
             out_dir = self.out_dir_name
-            if os.path.exists(os.path.realpath(work_dir + '/' + out_dir)):
+            if os.path.exists(os.path.realpath(f'{work_dir}/{out_dir}')):
                 count = 1
                 while True:
                     out_dir = '{}-{:03}'.format(self.out_dir_name, count)
-                    if os.path.exists(os.path.realpath(work_dir + '/' + out_dir)):
+                    if os.path.exists(os.path.realpath(f'{work_dir}/{out_dir}')):
                         count += 1
                     else:
                         break
@@ -348,11 +366,11 @@ class BuildScript:
                         print('Failed to create out path. Try setting it manually')
                         exit(1)
                         break
-            self.paths.base = os.path.realpath(work_dir + '/' + out_dir)
+            self.paths.base = os.path.realpath(f'{work_dir}/{out_dir}')
 
-        self.paths.base = os.path.realpath(self.paths.base) + '/'
-        self.paths.build = self.paths.base + 'build'
-        self.paths.archive_root = self.paths.base + 'archive' + '/'
+        self.paths.base = f'{os.path.realpath(self.paths.base)}/'
+        self.paths.build = f'{self.paths.base}build'
+        self.paths.archive_root = f'{self.paths.base}archive/'
         self.paths.archive_files = self.paths.archive_root + self.out_dir_name + '/'
 
         try:
@@ -362,29 +380,30 @@ class BuildScript:
             os.mkdir(self.paths.archive_files)
             self.platform.update_bin_path()
         except OSError as e:
-            print("Failed to create out paths: {}. Try setting it manually.".format(str(e)))
+            print(f"Failed to create out paths: {str(e)}. Try setting it manually.")
             exit(1)
 
     def run_cmake(self):
         try:
-            args = [self.cmake_binary]
-            args.extend(['-S', self.repo_root])
-            args.extend(['-B', self.paths.build])
+            args = [self.cmake_binary, *['-S', self.repo_root], *['-B', self.paths.build]]
             args.extend(self.platform.get_cmake_args())
-            args.extend(['-DUSE_UPDATER=TRUE'])
-            args.extend(['-DBHL_VERSION_MAJOR=' + str(self.release_version_array[0])])
-            args.extend(['-DBHL_VERSION_MINOR=' + str(self.release_version_array[1])])
-            args.extend(['-DBHL_VERSION_PATCH=' + str(self.release_version_array[2])])
-
+            args.extend(
+                [
+                    '-DUSE_UPDATER=TRUE',
+                    f'-DBHL_VERSION_MAJOR={str(self.release_version_array[0])}',
+                    f'-DBHL_VERSION_MINOR={str(self.release_version_array[1])}',
+                    f'-DBHL_VERSION_PATCH={str(self.release_version_array[2])}',
+                ]
+            )
             if self.release_version_array[3] == '':
                 args.extend(['-DBHL_VERSION_TAG=no_tag'])
             else:
-                args.extend(['-DBHL_VERSION_TAG=' + self.release_version_array[3]])
+                args.extend([f'-DBHL_VERSION_TAG={self.release_version_array[3]}'])
 
             args.extend(self.cmake_args)
 
             if self.platform.need_cmake_build_type_var():
-                args.extend(['-DCMAKE_BUILD_TYPE=' + self.build_type])
+                args.extend([f'-DCMAKE_BUILD_TYPE={self.build_type}'])
 
             print("---------------- Running CMake with arguments:")
             for i in args:
@@ -400,22 +419,19 @@ class BuildScript:
             print('CMake finished with non-zero status code.')
             exit(1)
         except Exception as e:
-            print('Failed to run CMake: {}.'.format(str(e)))
+            print(f'Failed to run CMake: {str(e)}.')
             exit(1)
 
     def build_targets(self):
         try:
-            targets = ''
-
-            for target in self.build_target.get_build_target_names():
-                targets += target + ' '
-
+            targets = ''.join(
+                f'{target} '
+                for target in self.build_target.get_build_target_names()
+            )
             targets = targets.strip()
 
             print("---------------- Building targets", targets)
-            args = [self.cmake_binary]
-            args.extend(['--build', self.paths.build])
-            args.append('--target')
+            args = [self.cmake_binary, *['--build', self.paths.build], '--target']
             args.extend(self.build_target.get_build_target_names())
             args.extend(['--config', self.build_type])
             args.extend(self.platform.get_cmake_build_args())
@@ -433,7 +449,7 @@ class BuildScript:
             print('Build finished with non-zero status code.')
             exit(1)
         except Exception as e:
-            print('Failed to run build: {}.'.format(str(e)))
+            print(f'Failed to run build: {str(e)}.')
             exit(1)
 
     def copy_files(self):
@@ -443,10 +459,7 @@ class BuildScript:
         for i in files:
             print(i.src, '->', i.dst)
 
-            if os.path.isabs(i.src):
-                src = i.src
-            else:
-                src = self.repo_root + i.src
+            src = i.src if os.path.isabs(i.src) else self.repo_root + i.src
             dst = self.paths.archive_files + i.dst
 
             try:
@@ -468,7 +481,7 @@ class BuildScript:
                     shutil.copyfile(src, dst)
 
             except Exception as e:
-                print('Failed to copy files: {}.'.format(str(e)))
+                print(f'Failed to copy files: {str(e)}.')
                 exit(1)
 
         print()
@@ -477,16 +490,19 @@ class BuildScript:
     def create_install_metadata(self):
         print("---------------- Creating metadata")
         try:
-            create_metadata(self.release_version, self.paths.archive_files + 'valve_addon')
+            create_metadata(self.release_version, f'{self.paths.archive_files}valve_addon')
         except Exception as e:
-            print('Failed to create metadata file: {}.'.format(str(e)))
+            print(f'Failed to create metadata file: {str(e)}.')
             exit(1)
 
     def create_zip(self):
         print("---------------- Creating ZIP archive")
         try:
-            zipf = zipfile.ZipFile('{}{}.zip'.format(self.paths.base, self.out_dir_name), 'w',
-                                   zipfile.ZIP_DEFLATED)
+            zipf = zipfile.ZipFile(
+                f'{self.paths.base}{self.out_dir_name}.zip',
+                'w',
+                zipfile.ZIP_DEFLATED,
+            )
 
             for root, dirs, files in os.walk(self.paths.archive_root):
                 for file in files:
@@ -495,7 +511,7 @@ class BuildScript:
 
             zipf.close()
         except Exception as e:
-            print('Failed to create ZIP archive: {}.'.format(str(e)))
+            print(f'Failed to create ZIP archive: {str(e)}.')
             exit(1)
 
 
